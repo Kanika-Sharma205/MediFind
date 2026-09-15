@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediFind — Find medicine, right now</title>
+    <script src="auth-guard.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  
+
+<header class="nav" id="nav">
+  <div class="nav-inner" style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+    <a href="#" class="brand" style="display: flex; flex-direction: column; text-decoration: none;">
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <img class="brand-image" src="SAVE_20260612_121856.jpg.jpeg" alt="JSL Works logo" style="height: 75px; border-radius: 6px; object-fit: contain; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div style="height: 45px; width: 2px; background: var(--line); border-radius: 2px;"></div>
+        <img src="medifind_logo.png" alt="MediFind Logo" style="height: 75px; object-fit: contain;">
+      </div>
+      <span class="brand-tagline" style="font-size: 0.75rem; color: var(--slate); margin-top: 6px; font-weight: 600; letter-spacing: 0.5px;">विद्या परं बलमेतत् सर्वं ध्रुवं नित्यम्</span>
+    </a>
+
+    <nav class="nav-links" style="display: flex; gap: 8px; margin: 0 auto;">
+      <button class="nav-link active" data-view="customer">Find Medicine</button>
+      <button class="nav-link" data-view="history">Purchase History</button>
+      <button class="nav-link" data-view="pharmacy">Pharmacy Dashboard</button>
+      <button class="nav-link" data-view="pharmacist">Pharmacist Desk</button>
+      <button class="nav-link" data-view="admin">Admin Console</button>
+    </nav>
+    
+    <div class="nav-actions" style="display: flex; gap: 10px; align-items: center;">
+      <button class="nav-cta" id="cartBtn" type="button" style="position:relative; background:#fff; color:var(--ink); border:1px solid var(--line);">
+        🛒 Cart
+        <span id="cartCount" style="display:none; position:absolute; top:-6px; right:-6px; background:#dc2626; color:#fff; font-size:0.7rem; font-weight:700; border-radius:999px; min-width:18px; height:18px; align-items:center; justify-content:center; padding:0 4px;">0</span>
+      </button>
+      <button class="nav-cta" id="navAccountBtn">Sign in</button>
+    </div>
+  </div>
+</header>
+
+<!-- ============ CUSTOMER VIEW ============ -->
+<main id="view-customer" class="view active">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">Real-time medicine availability network</p>
+        <h1>Know it's in stock <em>before</em> you leave the house.</h1>
+        <p class="hero-sub">Search once, see every nearby pharmacy that actually has what you need — live quantities, live prices, a reservation that holds your stock while you travel.</p>
+
+        <div class="search-card" id="heroSearch">
+          
+          <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap;">
+            <input type="text" id="locationInput" placeholder="Enter City/Area to override location (e.g. Mumbai)" style="padding: 10px 14px; border: 1px solid var(--line); border-radius: 6px; flex: 1; outline: none; font-size: 0.9rem; min-width: 200px;">
+            <button id="setLocationBtn" style="background: var(--slate); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9rem;">Set Location</button>
+            <button id="autoLocationBtn" style="background: transparent; color: var(--primary); border: 1px solid var(--primary); padding: 9px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9rem;">Reset to Auto</button>
+          </div>
+          <div id="locationDisplay" style="font-size: 0.9rem; color: var(--slate); margin-bottom: 15px; display: none; background: var(--paper-soft); padding: 8px 12px; border-radius: 6px; border: 1px dashed var(--line);"></div>
+
+          <div class="search-row">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input type="text" id="medSearchInput" placeholder="Search medicine, brand, or generic name…" autocomplete="off">
+            <button class="search-btn" id="medSearchBtn">Search</button>
+            <button class="search-btn" id="nearbyPharmaciesBtn" type="button" style="background:var(--slate);">📍 Near me</button>
+          </div>
+          <div class="search-tags">
+            <div id="nearbyResultsBox" style="display:none; margin-top:12px;"></div>
+            <span>Try:</span>
+            <button class="tag" data-q="Paracetamol">Paracetamol</button>
+            <button class="tag" data-q="Azithromycin">Azithromycin</button>
+            <button class="tag" data-q="Insulin">Insulin</button>
+            <button class="tag" data-q="Metformin">Metformin</button>
+          </div>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat"><span class="stat-num">12</span><span class="stat-label">pharmacies live</span></div>
+          <div class="stat"><span class="stat-num">40</span><span class="stat-label">SKUs tracked</span></div>
+          <div class="stat"><span class="stat-num">98.2%</span><span class="stat-label">stock accuracy</span></div>
+        </div>
+      </div>
+
+      <!-- This container is where app.js will inject "Your Activity" -->
+      <div id="heroActivityContainer" style="display: flex; flex-direction: column;"></div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="results-section" id="resultsSection">
+    <div class="results-head">
+      <div>
+        <h2 id="resultsTitle">Search a medicine to see live pharmacy stock</h2>
+        <p class="muted" id="resultsSub">Results show distance, price, and exact quantity on shelf — updated within minutes.</p>
+      </div>
+      <div class="filter-bar" id="filterBar">
+        <select id="sortSelect">
+          <option value="distance">Sort: Nearest first</option>
+          <option value="price">Sort: Lowest price</option>
+          <option value="stock">Sort: Most in stock</option>
+        </select>
+        <button class="chip-filter" id="filterInStock">In stock only</button>
+      </div>
+    </div>
+
+    <div class="results-grid" id="resultsGrid"></div>
+
+    <div class="alt-suggestion" id="altSuggestion" hidden>
+      <div class="alt-icon">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/></svg>
+      </div>
+      <div>
+        <h3>Brand low everywhere nearby — generic equivalents are well stocked</h3>
+        <p class="muted">Same active ingredient, verified equivalence. Tap to add to your search.</p>
+        <div class="alt-chips" id="altChips"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- POST SEARCH ACTIONS -->
+  <section class="post-search" style="max-width: 1240px; margin: 40px auto; padding: 0 32px;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: stretch;">
+      
+      <!-- LEFT: Prescription -->
+      <div class="hero-rx" style="display: flex; flex-direction: column; justify-content: stretch; height: 100%;">
+        <div class="rx-banner-inner" style="flex-direction: column; text-align: center; padding: 48px 32px; gap: 20px; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--ink); border-radius: var(--radius-lg); color: #fff;">
+          <div class="rx-icon" style="margin: 0 auto; width: 56px; height: 56px; background: rgba(255,255,255,0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-family: var(--font-display); font-weight: 600;">℞</div>
+          <div class="rx-copy">
+            <h3 style="font-size: 1.3rem; margin-bottom: 12px; color: #fff;">Prescription medicine?</h3>
+            <p class="muted" style="margin-bottom: 16px; line-height: 1.6; color: #BFE0DC;">Upload it once, skip the counter wait. Our pharmacists review and approve before you arrive, holding your stock securely.</p>
+          </div>
+          <button class="btn-outline" id="uploadRxBtn" style="width: 100%; border: 1.5px solid rgba(255,255,255,0.5); background: transparent; color: #fff; padding: 12px 24px; border-radius: 99px; font-weight: 600; font-size: 0.88rem; cursor: pointer;">Upload prescription</button>
+        </div>
+      </div>
+
+      <!-- RIGHT: How it works (2x2) -->
+      <div class="how" style="margin: 0; padding: 0;">
+        <h2 style="font-size: 1.5rem; margin-bottom: 24px;">From search to pickup, four steps</h2>
+        <div class="how-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+          <div class="how-card" style="background: var(--paper-soft); padding: 24px; border-radius: var(--radius-md);">
+            <span class="how-tag" style="display: block; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; color: var(--amber-deep); margin-bottom: 8px; font-weight: 500;">Search</span>
+            <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Search by name</h3>
+            <p style="font-size: 0.9rem; color: var(--slate); line-height: 1.5;">Type a brand, generic, or salt name — we match across every connected pharmacy's live inventory.</p>
+          </div>
+          <div class="how-card" style="background: var(--paper-soft); padding: 24px; border-radius: var(--radius-md);">
+            <span class="how-tag" style="display: block; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; color: var(--amber-deep); margin-bottom: 8px; font-weight: 500;">Compare</span>
+            <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Compare shelves</h3>
+            <p style="font-size: 0.9rem; color: var(--slate); line-height: 1.5;">Distance, price, and exact unit count side by side, so the decision takes seconds.</p>
+          </div>
+          <div class="how-card" style="background: var(--paper-soft); padding: 24px; border-radius: var(--radius-md);">
+            <span class="how-tag" style="display: block; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; color: var(--amber-deep); margin-bottom: 8px; font-weight: 500;">Reserve</span>
+            <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Lock the stock</h3>
+            <p style="font-size: 0.9rem; color: var(--slate); line-height: 1.5;">A reservation ID temporarily holds your units so someone else can't buy them out.</p>
+          </div>
+          <div class="how-card" style="background: var(--paper-soft); padding: 24px; border-radius: var(--radius-md);">
+            <span class="how-tag" style="display: block; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; color: var(--amber-deep); margin-bottom: 8px; font-weight: 500;">Collect</span>
+            <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Walk in, walk out</h3>
+            <p style="font-size: 0.9rem; color: var(--slate); line-height: 1.5;">Show your reservation ID at the counter. Items are pre-verified before you arrive.</p>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ RESERVATION MODAL ============ -->
+<div class="modal-overlay" id="reserveModal">
+  <div class="modal">
+    <button class="modal-close" id="closeReserve">&times;</button>
+    <div id="reserveStep1">
+      <p class="eyebrow">Reserve medicine</p>
+      <h3 id="reserveMedName">Medicine name</h3>
+      <p class="muted" id="reservePharmName">Pharmacy name</p>
+      <div class="reserve-qty">
+        <label for="qtyInput">Quantity</label>
+        <div class="qty-control">
+          <button id="qtyMinus">−</button>
+          <input type="number" id="qtyInput" value="1" min="1" max="10">
+          <button id="qtyPlus">+</button>
+        </div>
+      </div>
+      <div class="reserve-note">
+        <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg>
+        Stock held for 30 minutes from confirmation.
+      </div>
+      <button class="btn-primary full" id="confirmReserveBtn">Add to cart</button>
+    </div>
+    <div id="reserveStep2" hidden>
+      <div class="reserve-success-icon">
+        <svg viewBox="0 0 24 24" fill="none" width="28" height="28"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h3>Added to cart</h3>
+      <p class="muted" id="addedToCartSummary">Item added to your cart.</p>
+      <button class="btn-primary full" id="viewCartFromReserveBtn">View cart</button>
+      <button class="btn-outline full" id="doneReserveBtn" style="margin-top:10px;">Continue shopping</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CART MODAL ============ -->
+<div class="modal-overlay" id="cartModal">
+  <div class="modal" style="max-width:560px;">
+    <button class="modal-close" id="closeCart">&times;</button>
+    <div id="cartViewMain">
+      <p class="eyebrow">Your cart</p>
+      <h3>Review before reserving</h3>
+      <div id="cartItemsContainer" style="max-height:360px; overflow-y:auto; margin:16px 0;"></div>
+      <div class="reserve-qty" style="margin-bottom:14px;">
+        <label for="cartNoteInput">Note for the pharmacy (optional)</label>
+        <textarea id="cartNoteInput" rows="2" placeholder="e.g. Please give only 5 days worth, generic is fine…" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--line, #e2e8f0); font-family:inherit;"></textarea>
+      </div>
+      <div id="cartPrescriptionSection" class="reserve-qty" style="margin-bottom:14px; display:none;">
+        <label for="cartPrescriptionFilesInput">Prescription required for one or more items in your cart</label>
+        <input type="file" id="cartPrescriptionFilesInput" accept=".pdf,.jpg,.jpeg,.png" multiple style="width:100%;">
+      </div>
+      <div class="reserve-note">
+        <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg>
+        Items from different pharmacies are reserved as separate orders.
+      </div>
+      <button class="btn-primary full" id="reserveAllBtn">Reserve all</button>
+    </div>
+    <div id="cartViewSuccess" hidden>
+      <div class="reserve-success-icon">
+        <svg viewBox="0 0 24 24" fill="none" width="28" height="28"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h3>Reservations confirmed</h3>
+      <div id="cartSuccessList" class="muted" style="margin:12px 0;"></div>
+      <button class="btn-primary full" id="cartDoneBtn">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DRAFT REVIEW MODAL ============ -->
+<div class="modal-overlay" id="draftReviewModal">
+  <div class="modal" style="max-width:560px;">
+    <button class="modal-close" id="closeDraftReview">&times;</button>
+    <p class="eyebrow">Pharmacist's proposal</p>
+    <h3>Review before you accept</h3>
+    <p class="muted" id="draftReviewPharmacyLine"></p>
+    <div id="draftReviewItemsContainer" style="max-height:320px; overflow-y:auto; margin:16px 0;"></div>
+    <div id="draftReviewNoteBox" class="reserve-note" style="display:none;"></div>
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn-outline-dark full" id="rejectDraftBtn">Decline</button>
+      <button class="btn-primary full" id="acceptDraftBtn">Accept &amp; get token</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PRESCRIPTION ORDER MODAL ============ -->
+
+<div class="modal-overlay" id="prescriptionOrderModal">
+  <div class="modal" style="max-width:560px;">
+    <button class="modal-close" id="closePrescriptionOrder">&times;</button>
+    <div id="prescriptionOrderStep1">
+      <p class="eyebrow">Upload prescription</p>
+      <h3>Let a pharmacist pick the right medicines</h3>
+      <p class="muted">Can't tell exactly what's written, or just want the pharmacist to handle it? Upload the prescription, pick a pharmacy, and add any notes — they'll review it and add the items themselves.</p>
+
+      <div class="reserve-qty" style="margin-top:16px;">
+        <label for="prescriptionPharmacySelect">Pharmacy</label>
+        <select id="prescriptionPharmacySelect" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--line, #e2e8f0);">
+          <option value="">Loading pharmacies…</option>
+        </select>
+      </div>
+
+      <div class="reserve-qty" style="margin-top:14px;">
+        <label for="prescriptionNoteInput">Notes for the pharmacist (optional)</label>
+        <textarea id="prescriptionNoteInput" rows="3" placeholder="e.g. Only need a 5-day supply, please skip the antacid, prefer generic brands…" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--line, #e2e8f0); font-family:inherit;"></textarea>
+      </div>
+
+      <div class="reserve-qty" style="margin-top:14px;">
+        <label for="prescriptionFilesInput">Prescription file(s)</label>
+        <input type="file" id="prescriptionFilesInput" accept=".pdf,.jpg,.jpeg,.png" multiple style="width:100%;">
+      </div>
+
+      <div class="reserve-note" style="margin-top:14px;">
+        <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg>
+        This pharmacy will review your file directly — it isn't shared with other pharmacies.
+      </div>
+
+      <button class="btn-primary full" id="submitPrescriptionOrderBtn" style="margin-top:14px;">Submit for review</button>
+    </div>
+    <div id="prescriptionOrderStep2" hidden>
+      <div class="reserve-success-icon">
+        <svg viewBox="0 0 24 24" fill="none" width="28" height="28"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h3>Sent for review</h3>
+      <p class="muted">The pharmacy will review your prescription and add the matching items. You'll see it update in your activity once they respond.</p>
+      <div class="reservation-id" id="prescriptionOrderCode">MF-000000</div>
+      <button class="btn-primary full" id="donePrescriptionOrderBtn">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PHARMACY DASHBOARD VIEW ============ -->
+<main id="view-pharmacy" class="view">
+  <section class="dash-shell">
+    <aside class="dash-sidebar">
+      <div class="dash-pharmacy-name">
+        <span class="pulse-dot pulse-dot--sm live"></span>
+        Wellness Plus Pharmacy
+      </div>
+      <nav class="dash-nav">
+        <button class="dash-nav-item active" data-panel="overview">Overview</button>
+        <button class="dash-nav-item" data-panel="inventory">Inventory</button>
+        <button class="dash-nav-item" data-panel="reservations">Reservations</button>
+        <button class="dash-nav-item" data-panel="analytics">Analytics</button>
+      </nav>
+    </aside>
+
+    <div class="dash-content">
+      <!-- Overview panel -->
+      <div class="dash-panel active" id="panel-overview">
+        <div class="dash-head">
+          <h2>Good morning, Wellness Plus</h2>
+          <p class="muted">Tuesday, June 16 — here's where things stand.</p>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <span class="kpi-label">Items in stock</span>
+            <span class="kpi-num">40</span>
+            <span class="kpi-delta up">▲ SKU tracked inventory</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Low stock alerts</span>
+            <span class="kpi-num warn">7</span>
+            <span class="kpi-delta">Needs reorder</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Pending reservations</span>
+            <span class="kpi-num">12</span>
+            <span class="kpi-delta">3 expiring soon</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Expiring in 30 days</span>
+            <span class="kpi-num danger">5</span>
+            <span class="kpi-delta">Review batch list</span>
+          </div>
+        </div>
+
+        <div class="dash-two-col">
+          <div class="panel-card">
+            <div class="panel-card-head">
+              <h3>Low stock alerts</h3>
+              <span class="badge badge-warn">7 items</span>
+            </div>
+            <table class="data-table" id="lowStockTable"></table>
+          </div>
+          <div class="panel-card">
+            <div class="panel-card-head">
+              <h3>Most searched nearby</h3>
+              <span class="badge">This week</span>
+            </div>
+            <div class="bar-list" id="demandList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventory panel -->
+      <div class="dash-panel" id="panel-inventory">
+        <div class="dash-head dash-head-row">
+          <div>
+            <h2>Inventory</h2>
+            <p class="muted">Manage stock levels, batches, and pricing.</p>
+          </div>
+          <button class="btn-primary" id="addMedicineBtn">+ Add medicine</button>
+        </div>
+        <div class="panel-card">
+          <table class="data-table data-table--full" id="inventoryTable"></table>
+        </div>
+      </div>
+
+      <!-- Reservations panel -->
+      <div class="dash-panel" id="panel-reservations">
+        <div class="dash-head">
+          <h2>Reservations</h2>
+          <p class="muted">Accept, reject, or mark collected.</p>
+        </div>
+        <div class="reservation-list" id="reservationList"></div>
+      </div>
+
+      <!-- Analytics panel -->
+      <div class="dash-panel" id="panel-analytics">
+        <div class="dash-head">
+          <h2>Analytics</h2>
+          <p class="muted">Demand patterns to plan reorders smarter.</p>
+        </div>
+        <div class="panel-card">
+          <h3 class="chart-title">Reservations vs. searches, last 7 days</h3>
+          <svg class="trend-chart" id="trendChart" viewBox="0 0 600 220"></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ PHARMACIST VIEW ============ -->
+<main id="view-pharmacist" class="view">
+  <section class="dash-shell">
+    <aside class="dash-sidebar">
+      <div class="dash-pharmacy-name">
+        <span class="pulse-dot pulse-dot--sm live"></span>
+        Pharmacist Desk
+      </div>
+      <nav class="dash-nav">
+        <button class="dash-nav-item active" data-panel="rxqueue">Prescription queue</button>
+        <button class="dash-nav-item" data-panel="collectqueue">Collection queue</button>
+        <button class="dash-nav-item" data-panel="medinfo">Medicine info</button>
+      </nav>
+    </aside>
+    <div class="dash-content">
+      <div class="dash-panel active" id="panel-rxqueue">
+        <div class="dash-head">
+          <h2>Prescription verification</h2>
+          <p class="muted">Review uploads, approve or reject before reservation releases.</p>
+        </div>
+        <div class="rx-queue" id="rxQueue"></div>
+      </div>
+
+      <div class="dash-panel" id="panel-collectqueue">
+        <div class="dash-head">
+          <h2>Collection queue</h2>
+          <p class="muted">Confirm pickups against reservation IDs.</p>
+        </div>
+        <div class="panel-card">
+          <table class="data-table data-table--full" id="collectionTable"></table>
+        </div>
+      </div>
+
+      <div class="dash-panel" id="panel-medinfo">
+        <div class="dash-head">
+          <h2>Medicine information</h2>
+          <p class="muted">Quick reference for customer questions.</p>
+        </div>
+        <div class="med-info-grid" id="medInfoGrid"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ ADMIN VIEW ============ -->
+<main id="view-admin" class="view">
+  <section class="dash-shell">
+    <aside class="dash-sidebar">
+      <div class="dash-pharmacy-name">
+        <span class="pulse-dot pulse-dot--sm live"></span>
+        Admin Console
+      </div>
+      <nav class="dash-nav">
+        <button class="dash-nav-item active" data-panel="adminoverview">Platform overview</button>
+        <button class="dash-nav-item" data-panel="verification">Pharmacy verification</button>
+        <button class="dash-nav-item" data-panel="useractivity">User activity</button>
+      </nav>
+    </aside>
+    <div class="dash-content">
+      <div class="dash-panel active" id="panel-adminoverview">
+        <div class="dash-head">
+          <h2>Platform overview</h2>
+          <p class="muted">Operational health across the network.</p>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card"><span class="kpi-label">Active pharmacies</span><span class="kpi-num">12</span><span class="kpi-delta up">▲ 3 this month</span></div>
+          <div class="kpi-card"><span class="kpi-label">Active users</span><span class="kpi-num">25</span><span class="kpi-delta up">▲ Testing phase</span></div>
+          <div class="kpi-card"><span class="kpi-label">Reservations today</span><span class="kpi-num">8</span><span class="kpi-delta">87% fulfilled</span></div>
+          <div class="kpi-card"><span class="kpi-label">Pending verifications</span><span class="kpi-num warn">3</span><span class="kpi-delta">Awaiting license check</span></div>
+        </div>
+        <div class="panel-card">
+          <h3 class="chart-title">Platform-wide medicine demand</h3>
+          <svg class="trend-chart" id="adminTrendChart" viewBox="0 0 600 220"></svg>
+        </div>
+      </div>
+
+      <div class="dash-panel" id="panel-verification">
+        <div class="dash-head">
+          <h2>Pharmacy verification</h2>
+          <p class="muted">Review license documents before approving registrations.</p>
+        </div>
+        <div class="panel-card">
+          <table class="data-table data-table--full" id="verificationTable"></table>
+        </div>
+      </div>
+
+      <div class="dash-panel" id="panel-useractivity">
+        <div class="dash-head">
+          <h2>User activity &amp; audit log</h2>
+          <p class="muted">Monitor flagged behavior and platform actions.</p>
+        </div>
+        <div class="panel-card">
+          <table class="data-table data-table--full" id="auditTable"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner" style="flex-direction: column; align-items: center; text-align: center;">
+    <div class="brand footer-brand" style="margin-bottom: 10px;"><span class="brand-mark"><span class="pulse-dot"></span></span>MediFind</div>
+    <p class="muted" style="margin-bottom: 5px;">A unified platform for medicine discovery, inventory visibility, and reservation management.</p>
+    <p style="font-size: 0.9rem; font-weight: 500; color: var(--slate); margin: 0;">Made by team CodeBlooded at JSL Works in India ❤️</p>
+  </div>
+</footer>
+
+<!-- ============ HISTORY VIEW ============ -->
+<main id="view-history" class="view" style="padding: 40px 20px;">
+  <div style="max-width: 1000px; margin: 0 auto;">
+    <h2 style="font-size: 2rem; margin-bottom: 20px;">Purchase History</h2>
+    <div style="background: var(--paper); border: 1px solid var(--line); border-radius: 8px; overflow: hidden;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead style="background: var(--paper-soft); border-bottom: 1px solid var(--line);">
+          <tr>
+            <th style="padding: 12px 16px; font-size: 0.85rem; color: var(--slate);">Order ID</th>
+            <th style="padding: 12px 16px; font-size: 0.85rem; color: var(--slate);">Date</th>
+            <th style="padding: 12px 16px; font-size: 0.85rem; color: var(--slate);">Pharmacy</th>
+            <th style="padding: 12px 16px; font-size: 0.85rem; color: var(--slate);">Items</th>
+            <th style="padding: 12px 16px; font-size: 0.85rem; color: var(--slate);">Status</th>
+          </tr>
+        </thead>
+        <tbody id="historyTableBody">
+          <!-- Populated via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<!-- ============ MAP MODAL ============ -->
+<div class="modal-overlay" id="mapModal">
+  <div class="modal" style="max-width: 600px; width: 92%; padding: 20px;">
+    <h3 style="margin-top: 0; font-size: 1.3rem;">Pharmacy Location</h3>
+    <div id="pharmacyMap" style="width: 100%; height: 400px; background: #e2e8f0; border-radius: 8px; margin: 15px 0;"></div>
+    <div style="text-align: right;">
+      <button class="btn btn-secondary" onclick="document.getElementById('mapModal').classList.remove('active')" style="background: var(--paper-soft); color: var(--slate); border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: 600;">Close</button>
+    </div>
+  </div>
+</div><script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

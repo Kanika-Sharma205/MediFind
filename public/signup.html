@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediFind - Create Account</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    function togglePassword(id) {
+      const input = document.getElementById(id);
+      const toggleBtn = input.nextElementSibling;
+      if (input.type === "password") {
+        input.type = "text";
+        toggleBtn.textContent = "Hide";
+      } else {
+        input.type = "password";
+        toggleBtn.textContent = "Show";
+      }
+    }
+  </script>
+  <style>
+    body { background-color: var(--paper-soft); display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+    .auth-card { background: var(--paper); padding: 40px; border-radius: var(--radius-md); box-shadow: var(--shadow-card); width: 100%; max-width: 450px; }
+    .auth-brand { text-align: center; margin-bottom: 8px; font-family: var(--font-display); font-size: 1.5rem; color: var(--ink); }
+    .auth-subtitle { text-align: center; margin-bottom: 32px; color: var(--slate); font-size: 0.9rem; }
+    .auth-form { display: flex; flex-direction: column; gap: 16px; }
+    .auth-input, .auth-select { padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 1rem; width: 100%; box-sizing: border-box; background: white; }
+    .auth-input:focus, .auth-select:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px var(--ink-tint); }
+    .auth-btn { background: var(--ink); color: white; border: none; padding: 14px; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 8px; width: 100%; }
+    .auth-btn:hover { background: var(--ink-deep); }
+    .auth-error { color: var(--danger); font-size: 0.875rem; display: none; background: var(--danger-tint); padding: 10px; border-radius: var(--radius-sm); margin-bottom: 16px; }
+    .auth-links { margin-top: 24px; text-align: center; font-size: 0.9rem; }
+    .auth-links a { color: var(--slate); text-decoration: none; }
+    .auth-links a:hover { color: var(--ink); text-decoration: underline; }
+    
+    /* Document Section Styles */
+    .doc-section { border: 1px solid var(--line); padding: 20px; border-radius: var(--radius-sm); background: var(--paper-soft); margin-top: 8px; }
+    .doc-section p { margin-top: 0; font-weight: 600; color: var(--ink); font-size: 0.9rem; }
+    .doc-section label { display: block; margin-top: 10px; font-size: 0.85rem; color: var(--slate); }
+  
+    .password-container { position: relative; width: 100%; }
+    .password-container input { width: 100%; }
+    .password-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--slate); font-size: 0.9rem; user-select: none; }
+  </style>
+</head>
+<body>
+
+  <div class="auth-card">
+    <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 10px;">
+      <img src="SAVE_20260612_121856.jpg.jpeg" alt="JSL Works logo" style="height: 75px; border-radius: 6px; object-fit: contain; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+      <div style="height: 45px; width: 2px; background: var(--line); border-radius: 2px;"></div>
+      <img src="medifind_logo.png" alt="MediFind Logo" style="height: 75px; object-fit: contain;">
+    </div>
+    <div style="text-align: center; font-size: 0.75rem; color: var(--slate); margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px;">विद्या परं बलमेतत् सर्वं ध्रुवं नित्यम्</div>
+    <div class="auth-brand">Join MediFind</div>
+    <div class="auth-subtitle">Create an account to reserve medicines or manage your pharmacy.</div>
+    
+    <div class="auth-error" id="errorMsg"></div>
+
+    <form id="signupForm" class="auth-form">
+      <div class="auth-tabs" style="display:flex; margin-bottom: 20px; border-bottom: 1px solid var(--line);">
+        <button type="button" id="tabCustomer" class="tab-btn active" style="flex:1; background:none; border:none; padding:12px; font-weight:600; color:var(--ink); border-bottom: 2px solid var(--ink); cursor:pointer;" onclick="selectRole('CUSTOMER')">Customer</button>
+        <button type="button" id="tabPharmacy" class="tab-btn" style="flex:1; background:none; border:none; padding:12px; font-weight:600; color:var(--slate); border-bottom: 2px solid transparent; cursor:pointer;" onclick="selectRole('OWNER')">Pharmacy Owner</button>
+      </div>
+      <input type="hidden" id="role" value="CUSTOMER">
+
+      <input type="text" id="name" class="auth-input" placeholder="Full Name" required>
+      <input type="email" id="email" class="auth-input" placeholder="Email Address" required>
+      <input type="text" id="phone" class="auth-input" placeholder="Mobile Number (10 digits)" pattern="\d{10}" title="Must be exactly 10 digits without spaces or special characters." required>
+      <div class="password-container">
+          <input type="password" id="password" class="auth-input" placeholder="Password" required>
+          <span class="password-toggle" onclick="togglePassword('password')">Show</span>
+        </div>
+
+      <div id="pharmacyDocSection" style="display:none;" class="doc-section">
+        <p>Pharmacy Verification</p>
+        <input type="text" id="legalStoreName" class="auth-input" placeholder="Legal Store Name">
+        <label>GST Document <input type="file" id="gstDocument" class="auth-input" style="padding: 6px;"></label>
+        <label>PAN Card <input type="file" id="panDocument" class="auth-input" style="padding: 6px;"></label>
+        <label>Drug License <input type="file" id="licenseDocument" class="auth-input" style="padding: 6px;"></label>
+        <label>Proof of Address <input type="file" id="addressProof" class="auth-input" style="padding: 6px;"></label>
+        <div style="margin-top:16px;">
+  <p style="font-weight:600; color:var(--ink); font-size:0.9rem;">Pharmacy Location</p>
+  <div style="display:flex; gap:8px; margin-bottom:10px;">
+    <input type="text" id="locationSearchInput" class="auth-input" placeholder="Search e.g. Ramnagar Chowk, Roorkee" style="flex:1;">
+    <button type="button" id="searchLocationBtn" class="auth-btn" style="width:auto; margin-top:0; white-space:nowrap; padding:0 16px;">Search</button>
+  </div>
+  <button type="button" id="useCurrentLocationBtn" class="auth-btn" style="background:var(--slate); margin-bottom:10px;">📍 Use my current location</button>
+  <div id="pharmacyMap" style="height:220px; border-radius:var(--radius-sm); border:1px solid var(--line);"></div>
+  <p style="font-size:0.8rem; color:var(--slate); margin-top:8px;">Drag the pin to fine-tune the exact spot.</p>
+  <div id="resolvedAddressLine" style="font-size:0.85rem; color:var(--ink); margin-top:6px;"></div>
+</div>
+      </div>
+
+      <button type="submit" id="submitBtn" class="auth-btn">Create Account</button>
+    </form>
+
+    <div class="auth-links">
+      <a href="login.html">Already have an account? Sign in</a>
+    </div>
+  </div>
+
+  <script>
+    function selectRole(role) {
+      document.getElementById('role').value = role;
+      const tabCustomer = document.getElementById('tabCustomer');
+      const tabPharmacy = document.getElementById('tabPharmacy');
+      const docSection = document.getElementById('pharmacyDocSection');
+      const nameInput = document.getElementById('name');
+
+      if (role === 'CUSTOMER') {
+        tabCustomer.style.color = 'var(--ink)';
+        tabCustomer.style.borderBottom = '2px solid var(--ink)';
+        tabPharmacy.style.color = 'var(--slate)';
+        tabPharmacy.style.borderBottom = '2px solid transparent';
+        docSection.style.display = 'none';
+        nameInput.placeholder = 'Full Name';
+      } else {
+        tabPharmacy.style.color = 'var(--ink)';
+        tabPharmacy.style.borderBottom = '2px solid var(--ink)';
+        tabCustomer.style.color = 'var(--slate)';
+        tabCustomer.style.borderBottom = '2px solid transparent';
+        docSection.style.display = 'block';
+        nameInput.placeholder = 'Owner\'s Full Name';
+        setTimeout(() => {
+          initPharmacyMap();
+          if (pharmacyMap) pharmacyMap.invalidateSize();
+        }, 50);
+      }
+    }
+
+let pharmacyMap, pharmacyMarker;
+let pharmacyLocation = { latitude: 29.8543, longitude: 77.8880, address: '', city: '', state: '', pincode: '' };
+
+function initPharmacyMap() {
+  if (pharmacyMap) return;
+  pharmacyMap = L.map('pharmacyMap').setView([28.6139, 77.2090], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19,
+  }).addTo(pharmacyMap);
+
+  pharmacyMarker = L.marker([28.6139, 77.2090], { draggable: true }).addTo(pharmacyMap);
+  pharmacyMarker.on('dragend', () => {
+    const pos = pharmacyMarker.getLatLng();
+    reverseGeocodeLocation(pos.lat, pos.lng);
+  });
+  pharmacyMap.on('click', (e) => {
+    pharmacyMarker.setLatLng(e.latlng);
+    reverseGeocodeLocation(e.latlng.lat, e.latlng.lng);
+  });
+}
+
+async function reverseGeocodeLocation(lat, lng) {
+  pharmacyLocation.latitude = lat;
+  pharmacyLocation.longitude = lng;
+  const line = document.getElementById('resolvedAddressLine');
+  line.textContent = 'Looking up address...';
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+    const data = await res.json();
+    const addr = data.address || {};
+    pharmacyLocation.address = data.display_name || '';
+    pharmacyLocation.city = addr.city || addr.town || addr.village || addr.county || '';
+    pharmacyLocation.state = addr.state || '';
+    pharmacyLocation.pincode = addr.postcode || '';
+    line.textContent = pharmacyLocation.address || `Lat ${lat.toFixed(4)}, Lng ${lng.toFixed(4)}`;
+  } catch (err) {
+    line.textContent = `Lat ${lat.toFixed(4)}, Lng ${lng.toFixed(4)} (address lookup failed, coordinates still saved)`;
+  }
+}
+
+async function searchLocation() {
+  const query = document.getElementById('locationSearchInput').value.trim();
+  if (!query) return;
+  const line = document.getElementById('resolvedAddressLine');
+  line.textContent = 'Searching...';
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`);
+    const results = await res.json();
+    if (!results.length) {
+      line.textContent = 'No location found — try a different search, or drag the pin manually.';
+      return;
+    }
+    const { lat, lon } = results[0];
+    pharmacyMap.setView([lat, lon], 15);
+    pharmacyMarker.setLatLng([lat, lon]);
+    reverseGeocodeLocation(parseFloat(lat), parseFloat(lon));
+  } catch (err) {
+    line.textContent = 'Search failed. Please try again or use the map directly.';
+  }
+}
+
+function useCurrentLocation() {
+  if (!navigator.geolocation) {
+    alert('Your browser does not support location access. Please search or use the map instead.');
+    return;
+  }
+  document.getElementById('resolvedAddressLine').textContent = 'Fetching your location...';
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+const { latitude, longitude, accuracy } = position.coords;
+      if (accuracy > 5000) {
+        alert(`Heads up: your browser's location accuracy is very low (~${Math.round(accuracy/1000)}km). Please verify the pin is actually on your store, or use the search box instead.`);
+      }      pharmacyMap.setView([latitude, longitude], 16);
+      pharmacyMarker.setLatLng([latitude, longitude]);
+      reverseGeocodeLocation(latitude, longitude);
+    },
+    () => {
+      document.getElementById('resolvedAddressLine').textContent = 'Could not access your location. Please search or drag the pin manually.';
+    }
+  );
+}
+document.getElementById('searchLocationBtn').addEventListener('click', searchLocation);
+document.getElementById('useCurrentLocationBtn').addEventListener('click', useCurrentLocation);
+
+    function togglePassword(inputId, icon) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        icon.textContent = '👁️';
+      }
+    }
+
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const errorMsg = document.getElementById('errorMsg');
+      
+      btn.textContent = 'Creating Account...';
+      btn.disabled = true;
+      errorMsg.style.display = 'none';
+      if (document.getElementById('role').value === 'OWNER' && !pharmacyLocation.latitude) {
+  errorMsg.textContent = 'Please set your pharmacy location on the map before submitting.';
+  errorMsg.style.display = 'block';
+  btn.textContent = 'Create Account';
+  btn.disabled = false;
+  return;
+}
+
+      const formData = new FormData();
+      formData.append('name', document.getElementById('name').value);
+      formData.append('email', document.getElementById('email').value);
+      formData.append('phone', document.getElementById('phone').value);
+      formData.append('password', document.getElementById('password').value);
+      formData.append('role', document.getElementById('role').value);
+      
+      if (document.getElementById('role').value === 'OWNER') {
+        formData.append('legalStoreName', document.getElementById('legalStoreName').value);
+        if (document.getElementById('gstDocument').files[0]) formData.append('gstDocument', document.getElementById('gstDocument').files[0]);
+        if (document.getElementById('panDocument').files[0]) formData.append('panDocument', document.getElementById('panDocument').files[0]);
+        if (document.getElementById('licenseDocument').files[0]) formData.append('licenseDocument', document.getElementById('licenseDocument').files[0]);
+        if (document.getElementById('addressProof').files[0]) formData.append('addressProof', document.getElementById('addressProof').files[0]);
+        formData.append('latitude', pharmacyLocation.latitude ?? '');
+formData.append('longitude', pharmacyLocation.longitude ?? '');
+formData.append('address', pharmacyLocation.address || '');
+formData.append('city', pharmacyLocation.city || '');
+formData.append('state', pharmacyLocation.state || '');
+formData.append('pincode', pharmacyLocation.pincode || '');
+      }
+
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Registration failed');
+
+        // Success behavior
+        if (document.getElementById('role').value === 'OWNER') {
+            document.querySelector('.auth-card').innerHTML = `<div style="text-align:center;"><h3>Request Sent</h3><p>Your documents are under review. Admin will approve shortly.</p><a href="login.html" class="auth-btn" style="display:block; text-decoration:none;">Back to Login</a></div>`;
+        } else {
+            localStorage.setItem('medifind-token', data.token);
+            window.location.href = 'index.html';
+        }
+      } catch (err) {
+        errorMsg.textContent = err.message;
+        errorMsg.style.display = 'block';
+        btn.textContent = 'Create Account';
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

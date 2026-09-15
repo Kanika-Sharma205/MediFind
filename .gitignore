@@ -1,0 +1,14 @@
+# Node dependencies
+node_modules/
+
+# Environment secrets (Critical!)
+.env
+.env.local
+
+# Operating system files
+.DS_Store
+Thumbs.db
+node_modules/
+dist/
+.env
+.DS_Store

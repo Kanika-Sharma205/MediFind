@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediFind - Admin Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Modal Styles */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; align-items: center; justify-content: center; }
+    .modal { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .form-control { width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 6px; font-family: inherit; box-sizing: border-box; margin-bottom: 15px; }
+    
+    .doc-link { display: inline-block; background: #f1f5f9; color: var(--ok); padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem; font-weight: 500; margin: 2px 0; border: 1px solid var(--line); }
+    .doc-link:hover { background: #e2e8f0; }
+
+    .btn-approve { background: var(--ok); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-right: 5px; }
+    .btn-reject { background: var(--danger); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    
+    .nav-cta.logout-btn { background: #fff; color: var(--ink); border: 1px solid var(--line); margin-right: 10px; }
+    .nav-cta.logout-btn:hover { background: #f1f5f9; }
+  </style>
+</head>
+<body data-view="admin">
+
+  <!-- ============ NAV ============ -->
+  <header class="nav" id="nav">
+    <div class="nav-inner" style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+      <a href="#" class="brand" style="display: flex; flex-direction: column; text-decoration: none;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <img class="brand-image" src="SAVE_20260612_121856.jpg.jpeg" alt="JSL Works logo" style="height: 75px; border-radius: 6px; object-fit: contain; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+          <div style="height: 45px; width: 2px; background: var(--line); border-radius: 2px;"></div>
+          <img src="medifind_logo.png" alt="MediFind Logo" style="height: 75px; object-fit: contain;">
+        </div>
+        <span class="brand-tagline" style="font-size: 0.75rem; color: var(--slate); margin-top: 6px; font-weight: 600; letter-spacing: 0.5px;">विद्या परं बलमेतत् सर्वं ध्रुवं नित्यम्</span>
+      </a>
+      
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <h1 style="margin: 0; font-size: 1.2rem; font-weight: 500; color: var(--ink);">Admin Console</h1>
+        <button class="nav-cta logout-btn" onclick="logout()" style="margin: 0;">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ ADMIN VIEW ============ -->
+  <main id="view-admin" class="view active">
+    <section class="dash-shell">
+      <aside class="dash-sidebar">
+        <div class="dash-pharmacy-name">
+          <span class="pulse-dot pulse-dot--sm live"></span>
+          Admin Panel
+        </div>
+        <nav class="dash-nav">
+          <button class="dash-nav-item active" onclick="switchAdminTab('adminoverview')">Platform overview</button>
+          <button class="dash-nav-item" onclick="switchAdminTab('verification')">Pharmacy verification</button>
+          <button class="dash-nav-item" onclick="switchAdminTab('useractivity')">User activity & Reservations</button>
+          
+        </nav>
+      </aside>
+
+      <div class="dash-content">
+        
+        <!-- Platform Overview -->
+        <div class="dash-panel active" id="panel-adminoverview">
+          <div class="dash-head">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <h2>Platform overview</h2>
+                <button class="btn btn-primary" onclick="window.openComplaintModal()" style="background: var(--danger); border: none; padding: 8px 16px;">Report User</button>
+              </div>
+            <p class="muted">Operational health across the network.</p>
+          </div>
+          <div class="kpi-row">
+            <div class="kpi-card"><span class="kpi-label">Active pharmacies</span><span class="kpi-num" id="kpiPharmacies">0</span><span class="kpi-delta up"></span></div>
+            <div class="kpi-card"><span class="kpi-label">Active users</span><span class="kpi-num" id="kpiUsers">0</span><span class="kpi-delta up"></span></div>
+            <div class="kpi-card"><span class="kpi-label">Reservations</span><span class="kpi-num" id="kpiReservations">0</span><span class="kpi-delta">Platform-wide total</span></div>
+            <div class="kpi-card"><span class="kpi-label">Pending verifications</span><span class="kpi-num warn" id="kpiPending">0</span><span class="kpi-delta">Awaiting approval</span></div>
+          </div>
+          <div class="panel-card">
+            <h3 class="chart-title">Platform-wide medicine demand</h3>
+            <div style="height: 200px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--slate); font-weight: 500;">
+              Chart data will populate as users search.
+            </div>
+          </div>
+        </div>
+
+        <!-- Pharmacy Verification -->
+        <div class="dash-panel" id="panel-verification" style="display: none;">
+          <div class="dash-head">
+            <h2>Pharmacy verification</h2>
+            <p class="muted">Review license documents before approving registrations.</p>
+          </div>
+          <div class="panel-card">
+            <table class="data-table data-table--full" style="width: 100%; text-align: left;">
+              <thead>
+                <tr>
+                  <th>PHARMACY DETAILS</th>
+                  <th>OWNER DETAILS</th>
+                  <th>UPLOADED DOCUMENTS</th>
+                  <th>LOCATION</th>
+                  <th>ACTION</th>
+                </tr>
+              </thead>
+              <tbody id="verificationBody">
+                <tr><td colspan="5" style="text-align: center; color: var(--slate); padding: 30px;">Loading pending applications...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- User Activity & Reservations -->
+        <div class="dash-panel" id="panel-useractivity" style="display: none;">
+          <div class="dash-head">
+            <h2>User activity & Reservations</h2>
+            <p class="muted">Monitor reservations and platform actions.</p>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap;">
+            <button class="chip-filter active subtab-btn" onclick="switchSubTab('reservations', this)">Customer Reservations</button>
+            <button class="chip-filter subtab-btn" onclick="switchSubTab('registrations', this)">Customer Registrations</button>
+            <button class="chip-filter subtab-btn" onclick="switchSubTab('pharmacyregistrations', this)">Pharmacy Registrations</button>
+            <button class="chip-filter subtab-btn" onclick="switchSubTab('audit', this)">Admin Audit Logs</button>
+          </div>
+
+          <!-- Customer Reservations Subtab -->
+          <div id="subtab-reservations" class="subtab-panel" style="display: block;">
+            <div class="panel-card">
+              <table class="data-table data-table--full" style="width: 100%; text-align: left;">
+                <thead>
+                  <tr>
+                    <th>ORDER ID</th>
+                    <th>CUSTOMER</th>
+                    <th>PHARMACY</th>
+                    <th>MEDICINE</th>
+                    <th>STATUS</th>
+                    <th>DATE</th>
+                  </tr>
+                </thead>
+                <tbody id="auditTable">
+                  <tr><td colspan="6" style="text-align: center; color: var(--slate); padding: 30px;">Loading reservations...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Customer Registrations Subtab -->
+          <div id="subtab-registrations" class="subtab-panel" style="display: none;">
+            <div class="panel-card">
+              <table class="data-table data-table--full" style="width: 100%; text-align: left;">
+                <thead>
+                  <tr>
+                    <th>NAME</th>
+                    <th>EMAIL</th>
+                    <th>JOINED ON</th>
+                  </tr>
+                </thead>
+                <tbody id="registrationsTable">
+                  <tr><td colspan="3" style="text-align: center; color: var(--slate); padding: 30px;">Loading registrations...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Pharmacy Registrations Subtab -->
+          <div id="subtab-pharmacyregistrations" class="subtab-panel" style="display: none;">
+            <div class="panel-card">
+              <table class="data-table data-table--full" style="width: 100%; text-align: left;">
+                <thead>
+                  <tr>
+                    <th>PHARMACY NAME</th>
+                    <th>OWNER</th>
+                    <th>JOINED ON</th>
+                  </tr>
+                </thead>
+                <tbody id="pharmacyRegistrationsTable">
+                  <tr><td colspan="3" style="text-align: center; color: var(--slate); padding: 30px;">Loading registrations...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Admin Audit Logs Subtab -->
+          <div id="subtab-audit" class="subtab-panel" style="display: none;">
+            <div class="panel-card">
+              <table class="data-table data-table--full" style="width: 100%; text-align: left;">
+                <thead>
+                  <tr>
+                    <th>ACTION</th>
+                    <th>PHARMACY</th>
+                    <th>PERFORMED BY</th>
+                    <th>DATE & TIME</th>
+                    <th>DETAILS</th>
+                  </tr>
+                </thead>
+                <tbody id="adminLogsTable">
+                  <tr><td colspan="5" style="text-align: center; color: var(--slate); padding: 30px;">Loading logs...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </section>
+  
+      
+
+      </main>
+
+  <!-- ============ REJECTION MODAL ============ -->
+  <div class="modal-overlay" id="rejectModal">
+    <div class="modal">
+      <h3 style="margin-top:0;">Reject Application</h3>
+      <p style="font-size: 0.85rem; color: var(--slate); margin-bottom: 20px;">The owner will be notified of the reason for rejection.</p>
+      
+      <label style="display:block; margin-bottom:8px; font-weight:600; font-size: 0.9rem;">Select Reason:</label>
+      <select id="rejectReasonSelect" class="form-control" onchange="toggleCustomReason()">
+        <option value="Expired Documents (GST/License)">Expired Documents (GST/License)</option>
+        <option value="License Number already in use by another store">License Number already in use</option>
+        <option value="Invalid or illegible identity proof">Invalid or illegible identity proof</option>
+        <option value="Address verification failed">Address verification failed</option>
+        <option value="OTHER">Other (Please specify below)</option>
+      </select>
+
+      <div id="otherReasonBox" style="display:none;">
+        <label style="display:block; font-size:0.85rem; margin-bottom:5px; font-weight:600;">Custom Reason:</label>
+        <input type="text" id="rejectReasonCustom" class="form-control" placeholder="Type specific reason...">
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 10px;">
+        <button onclick="closeRejectModal()" style="padding:10px 15px; border:1px solid var(--line); background: white; border-radius:6px; cursor:pointer; font-weight: 600;">Cancel</button>
+        <button onclick="submitRejection()" style="background:var(--danger); color:white; padding:10px 15px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Confirm Rejection</button>
+      </div>
+    </div>
+  </div>
+
+  
+    <!-- ============ COMPLAINT MODAL ============ -->
+    <div class="modal-overlay" id="complaintModal" style="display: none; align-items: center; justify-content: center;">
+      <div class="modal" style="background: white; padding: 20px; border-radius: 8px; width: 400px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h3 style="margin-top:0;">Report a User</h3>
+        <p style="font-size: 0.85rem; color: var(--slate); margin-bottom: 20px;">File an official complaint against a user.</p>
+        
+        <label style="display:block; margin-bottom:8px; font-weight:600; font-size: 0.9rem;">User Email:</label>
+        <input type="email" id="complaintUserEmail" class="form-control" placeholder="Enter user's email address" style="margin-bottom: 15px;">
+
+        <label style="display:block; margin-bottom:8px; font-weight:600; font-size: 0.9rem;">Issue Type:</label>
+        <select id="complaintReasonSelect" class="form-control" onchange="window.toggleComplaintCustomReason()" style="margin-bottom: 15px;">
+          <option value="Fraudulent Activity">Fraudulent Activity</option>
+          <option value="Spam">Spam</option>
+          <option value="Policy Violation">Policy Violation</option>
+          <option value="OTHER">Other (Please specify below)</option>
+        </select>
+  
+        <div id="complaintOtherReasonBox" style="display:none; margin-bottom: 15px;">
+          <label style="display:block; font-size:0.85rem; margin-bottom:5px; font-weight:600;">Custom Reason:</label>
+          <input type="text" id="complaintReasonCustom" class="form-control" placeholder="Type specific reason...">
+        </div>
+  
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 10px;">
+          <button onclick="window.closeComplaintModal()" style="padding:10px 15px; border:1px solid var(--line); background: white; border-radius:6px; cursor:pointer; font-weight: 600;">Cancel</button>
+          <button onclick="window.submitComplaint()" style="background:var(--danger); color:white; padding:10px 15px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Submit Report</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    // --- Authentication Check ---
+    const token = '';
+    const userStr = localStorage.getItem('medifind-user');
+    let currentUser = null;
+    
+    if (!userStr) {
+      window.location.href = 'login.html';
+    } else {
+      const user = JSON.parse(userStr);
+      if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+        alert("Access Denied: You do not have administrator privileges.");
+        window.location.href = 'index.html';
+      }
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = 'login.html';
+    }
+
+    function switchAdminTab(tabId) {
+      document.querySelectorAll('.dash-nav-item').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      document.getElementById('panel-adminoverview').style.display = 'none';
+      document.getElementById('panel-verification').style.display = 'none';
+      document.getElementById('panel-useractivity').style.display = 'none';
+
+      document.getElementById('panel-' + tabId).style.display = 'block';
+    }
+
+    function switchSubTab(tabId, btn) {
+      document.querySelectorAll('.subtab-btn').forEach(el => el.classList.remove('active'));
+      if(btn) btn.classList.add('active');
+      document.querySelectorAll('.subtab-panel').forEach(el => el.style.display = 'none');
+      document.getElementById('subtab-' + tabId).style.display = 'block';
+    }
+
+    // Helper to build document links
+    function buildDocLink(url, label) {
+      if (!url) return `<span style="color: var(--slate); font-size: 0.8rem; display: block;">No ${label}</span>`;
+      return `<a href="/uploads/${url}" target="_blank" class="doc-link">📄 View ${label}</a><br>`;
+    }
+
+    // --- Load Pending Pharmacies ---
+    async function loadPendingPharmacies() {
+      const tbody = document.getElementById('verificationBody');
+      try {
+        const res = await fetch('/api/admin/pending', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const pharmacies = data.data || data || []; 
+        tbody.innerHTML = '';
+
+        document.getElementById('kpiPending').textContent = pharmacies.length;
+
+        if (pharmacies.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--slate); padding: 30px;">No pending pharmacy applications at this time.</td></tr>';
+          return;
+        }
+
+        pharmacies.forEach(pharmacy => {
+          const owner = pharmacy.owner || {};
+          
+          const docsHtml = 
+            buildDocLink(pharmacy.gstDocumentUrl, 'GST Document') +
+            buildDocLink(pharmacy.panDocumentUrl, 'PAN Card') +
+            buildDocLink(pharmacy.licenseDocumentUrl, 'Drug License') +
+            buildDocLink(pharmacy.addressProofUrl, 'Address Proof');
+
+          const addressHtml = pharmacy.latitude 
+            ? `${pharmacy.address}<br><span style="color:var(--slate); font-size:0.8rem;">(Lat: ${pharmacy.latitude}, Lng: ${pharmacy.longitude})</span>` 
+            : 'Pending location setup';
+
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>
+              <strong>${pharmacy.name}</strong><br>
+              <span style="font-size: 0.85rem; color: var(--slate);">Lic: ${pharmacy.licenseNumber || 'N/A'}</span>
+            </td>
+            <td>
+              ${owner.name || 'Unknown'}<br>
+              <span style="font-size: 0.85rem; color: var(--slate);">${owner.email || 'N/A'}</span>
+            </td>
+            <td>${docsHtml}</td>
+            <td style="max-width: 200px;">${addressHtml}</td>
+            <td>
+              <div style="display: flex; gap: 5px; flex-direction: column;">
+                <button class="btn-approve" onclick="approvePharmacy('${pharmacy.id}')">Approve</button>
+                <button class="btn-reject" onclick="openRejectModal('${pharmacy.id}')">Reject</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+
+      } catch (err) {
+        console.error(err);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red; padding: 30px;">Failed to load applications.</td></tr>';
+      }
+    }
+
+    // --- Approve Pharmacy ---
+    async function approvePharmacy(id) {
+      if (!confirm("Are you sure you want to approve this pharmacy? They will be granted immediate access to the platform.")) return;
+      
+      try {
+        const res = await fetch(`/api/admin/approve/${id}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.ok) {
+          alert("Pharmacy approved successfully!");
+          loadPendingPharmacies();
+        } else {
+          const err = await res.json();
+          alert("Error: " + (err.error || "Failed to approve"));
+        }
+      } catch (err) {
+        alert("Network error.");
+      }
+    }
+
+    // --- Rejection Modal Logic ---
+    let currentRejectId = null;
+
+    function toggleCustomReason() {
+      const val = document.getElementById('rejectReasonSelect').value;
+      document.getElementById('otherReasonBox').style.display = (val === 'OTHER') ? 'block' : 'none';
+    }
+
+    function openRejectModal(id) {
+      currentRejectId = id;
+      document.getElementById('rejectModal').style.display = 'flex';
+    }
+
+    function closeRejectModal() {
+      document.getElementById('rejectModal').style.display = 'none';
+      currentRejectId = null;
+      document.getElementById('rejectReasonCustom').value = '';
+    }
+
+    async function submitRejection() {
+      const selectValue = document.getElementById('rejectReasonSelect').value;
+      const customValue = document.getElementById('rejectReasonCustom').value;
+      const finalReason = selectValue === 'OTHER' ? customValue : selectValue;
+
+      if (selectValue === 'OTHER' && !customValue.trim()) {
+        return alert("Please type a custom reason for rejection.");
+      }
+
+      try {
+        const res = await fetch(`/api/admin/reject/${currentRejectId}`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ reason: finalReason })
+        });
+
+        if (res.ok) {
+          alert("Pharmacy application rejected. The owner will see this reason upon login.");
+          closeRejectModal();
+          loadPendingPharmacies();
+        } else {
+          const err = await res.json();
+          alert("Error: " + (err.error || "Failed to reject"));
+        }
+      } catch (e) {
+        alert("Network error.");
+      }
+    }
+
+    // --- Load Reservations for User Activity ---
+    async function loadPlatformReservations() {
+      const tbody = document.getElementById('auditTable');
+      try {
+        const res = await fetch('/api/reservations', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const reservations = data.data || [];
+        tbody.innerHTML = '';
+        
+        document.getElementById('kpiReservations').textContent = reservations.length;
+
+        if (reservations.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--slate); padding: 30px;">No reservations found.</td></tr>';
+          return;
+        }
+
+        reservations.forEach(r => {
+          const items = r.Items || [];
+          const medsListHtml = items.map(item => item.Medicine?.brandName || "Unknown").join(', ');
+          
+          let statusColor = "var(--slate)";
+          if (r.status === 'APPROVED' || r.status === 'COLLECTED' || r.status === 'ACCEPTED') statusColor = "var(--ok)";
+          if (r.status === 'REJECTED' || r.status === 'CANCELLED') statusColor = "var(--danger)";
+          if (r.status === 'PENDING' || r.status === 'AWAITING_REVIEW') statusColor = "#f59e0b"; // amber/yellow
+
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>
+              <span style="font-family: monospace; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">#${r.id.substring(0,8)}</span>
+            </td>
+            <td>${r.User?.name || 'Customer'}</td>
+            <td>${r.Pharmacy?.name || 'Unknown'}</td>
+            <td>${medsListHtml || (r.orderType === "PRESCRIPTION_ONLY" ? "Prescription Order" : "N/A")}</td>
+            <td>
+              <span style="font-size: 0.75rem; font-weight: 600; color: ${statusColor};">${r.status}</span>
+            </td>
+            <td style="color: var(--slate); font-size: 0.85rem;">
+              ${new Date(r.createdAt).toLocaleDateString()}
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (e) {
+        console.error("Error loading reservations:", e);
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red; padding: 30px;">Failed to load reservations.</td></tr>';
+      }
+    }
+
+    // --- Load other KPIs (Active Users / Pharmacies) if possible ---
+    // If the backend doesn't have an endpoint for this, we will leave them at 0 or fetch if available.
+    // For now, we will leave the skeleton in place.
+    
+    // --- Load Admin Audit Logs ---
+    async function loadAdminLogs() {
+      const tbody = document.getElementById('adminLogsTable');
+      if (!tbody) return;
+      try {
+        const res = await fetch('/api/admin/audit-logs', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const logs = await res.json();
+        tbody.innerHTML = '';
+        
+        if (!Array.isArray(logs) || logs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--slate); padding: 30px;">No audit logs found.</td></tr>';
+          return;
+        }
+
+        logs.forEach(log => {
+          const meta = log.metadata || {};
+          let statusColor = log.action === 'PHARMACY_APPROVED' ? 'var(--ok)' : 'var(--danger)';
+          
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td><span style="font-size: 0.75rem; font-weight: 600; color: ${statusColor};">${log.action.replace('_', ' ')}</span></td>
+            <td><strong>${meta.pharmacyName || 'Unknown'}</strong></td>
+            <td>
+              ${meta.adminName || 'Unknown'}<br>
+              <span style="font-size: 0.85rem; color: var(--slate);">${meta.adminEmail || 'Unknown'}</span>
+            </td>
+            <td style="color: var(--slate); font-size: 0.85rem;">
+              ${new Date(log.createdAt).toLocaleString()}
+            </td>
+            <td style="color: var(--slate); font-size: 0.85rem; max-width: 250px;">
+              ${log.action === 'PHARMACY_REJECTED' ? (meta.reason ? 'Reason: ' + meta.reason : 'Rejected') : 'Approved'}
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (e) {
+        console.error("Error loading admin logs:", e);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red; padding: 30px;">Failed to load logs.</td></tr>';
+      }
+    }
+
+    // --- Load Customer Registrations ---
+    async function loadCustomerRegistrations() {
+      const tbody = document.getElementById('registrationsTable');
+      if (!tbody) return;
+      try {
+        const res = await fetch('/api/admin/customers', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const users = await res.json();
+        tbody.innerHTML = '';
+        
+        if (!Array.isArray(users) || users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--slate); padding: 30px;">No recent registrations found.</td></tr>';
+          return;
+        }
+
+        users.forEach(user => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td><strong>${user.name || 'Unknown'}</strong></td>
+            <td><span style="font-size: 0.85rem; color: var(--slate);">${user.email || 'Unknown'}</span></td>
+            <td style="color: var(--slate); font-size: 0.85rem;">${new Date(user.createdAt).toLocaleString()}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (e) {
+        console.error("Error loading customer registrations:", e);
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: red; padding: 30px;">Failed to load registrations.</td></tr>';
+      }
+    }
+
+    // --- Load Pharmacy Registrations ---
+    async function loadPharmacyRegistrations() {
+      const tbody = document.getElementById('pharmacyRegistrationsTable');
+      if (!tbody) return;
+      try {
+        const res = await fetch('/api/admin/pharmacies', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const pharmacies = await res.json();
+        tbody.innerHTML = '';
+        
+        if (!Array.isArray(pharmacies) || pharmacies.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--slate); padding: 30px;">No recent pharmacy registrations found.</td></tr>';
+          return;
+        }
+
+        pharmacies.forEach(pharmacy => {
+          const owner = pharmacy.owner || {};
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td><strong>${pharmacy.name || 'Unknown'}</strong></td>
+            <td>${owner.name || 'Unknown'}<br><span style="font-size: 0.85rem; color: var(--slate);">${owner.email || 'Unknown'}</span></td>
+            <td style="color: var(--slate); font-size: 0.85rem;">${new Date(pharmacy.createdAt).toLocaleString()}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (e) {
+        console.error("Error loading pharmacy registrations:", e);
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: red; padding: 30px;">Failed to load registrations.</td></tr>';
+      }
+    }
+
+    // Initialize Page
+    loadPendingPharmacies();
+    loadPlatformReservations();
+    loadAdminLogs();
+    loadCustomerRegistrations();
+    loadPharmacyRegistrations();
+    
+    
+  </script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model AuditLog {
+  id          String   @id
+  action      String
+  entityType  String
+  entityId    String
+  performedBy String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+}
+
+model Complaint {
+  id          String   @id @default(uuid())
+  reportedId  String
+  reporterId  String
+  issueType   String
+  description String?
+  status      String   @default("OPEN")
+  createdAt   DateTime @default(now())
+
+  reported    User     @relation("ReportedComplaints", fields: [reportedId], references: [id])
+  reporter    User     @relation("FiledComplaints", fields: [reporterId], references: [id])
+}
+
+model Manufacturer {
+  id        String     @id
+  name      String
+  code      String?    @unique
+  createdAt DateTime   @default(now())
+  Medicine  Medicine[]
+}
+
+model Medicine {
+  id                   String            @id
+  skuCode              String            @unique
+  barcode              String?           @unique
+  genericName          String
+  brandName            String
+  dosageForm           String?
+  strength             String?
+  prescriptionRequired Boolean           @default(false)
+  manufacturerId       String
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime
+  category             String?
+  gstRate              Decimal?          @db.Decimal(5, 2)
+  hsnCode              String?
+  packSize             String?
+  saltComposition      String?
+  schedule             String?
+  unit                 String?
+  Manufacturer         Manufacturer      @relation(fields: [manufacturerId], references: [id])
+  MedicineBatch        MedicineBatch[]
+  ReservationItem      ReservationItem[]
+  isRestricted         Boolean   @default(false)
+}
+
+model MedicineBatch {
+  id                  String             @id
+  batchNumber         String
+  medicineId          String
+  pharmacyId          String
+  expiryDate          DateTime
+  purchasePrice       Decimal            @db.Decimal(10, 2)
+  sellingPrice        Decimal            @db.Decimal(10, 2)
+  createdAt           DateTime           @default(now())
+  freeQuantity        Int?
+  looseQuantity       Int?
+  manufacturingDate   DateTime?
+  marginPercent       Decimal?           @db.Decimal(5, 2)
+  mrp                 Decimal?           @db.Decimal(10, 2)
+  packQuantity        Int?
+  ptr                 Decimal?           @db.Decimal(10, 2)
+  purchaseInvoiceDate DateTime?
+  purchaseInvoiceNo   String?
+  rackNumber          String?
+  shelfNumber         String?
+  supplierGstin       String?
+  supplierName        String?
+  Medicine            Medicine           @relation(fields: [medicineId], references: [id])
+  Pharmacy            Pharmacy           @relation(fields: [pharmacyId], references: [id])
+  StockTransaction    StockTransaction[]
+
+  @@index([medicineId])
+  @@index([pharmacyId])
+}
+
+model Pharmacy {
+  id                 String           @id @default(uuid())
+  name               String
+  licenseNumber      String           @unique
+  phone              String?
+  email              String?
+  address            String
+  city               String
+  state              String
+  pincode            String
+  latitude           Float?
+  longitude          Float?
+  
+  // --- NEW FIELDS FOR VERIFICATION ---
+  status             PharmacyStatus   @default(PENDING)
+  isAvailable        Boolean          @default(false)
+  legalStoreName     String?          // Add this
+  addressProofUrl    String?
+  gstDocumentUrl     String?          
+  panDocumentUrl     String?          
+  licenseDocumentUrl String?          
+  
+  ownerId            String?          @unique 
+  owner              User?            @relation(fields: [ownerId], references: [id])
+  
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  
+  MedicineBatch      MedicineBatch[]
+  Reservation        Reservation[]
+  rejectionReason String?
+}
+model Prescription {
+  id        String             @id
+  userId    String
+  fileUrl   String
+  status    PrescriptionStatus @default(PENDING)
+  createdAt DateTime           @default(now())
+  User      User               @relation(fields: [userId], references: [id])
+}
+
+model Reservation {
+  id               String            @id @default(uuid())
+  userId           String            
+  pharmacyId       String            
+  status           ReservationStatus @default(PENDING)
+  orderType        OrderType         @default(ITEM_BASED)
+  customerNote     String?
+  pharmacistNote   String?
+  prescriptionUrls String[]          
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  
+  // 🔗 The missing relation fields pointing back to User and Pharmacy
+  User             User              @relation(fields: [userId], references: [id])
+  Pharmacy         Pharmacy          @relation(fields: [pharmacyId], references: [id])
+
+  Items            ReservationItem[]
+}
+
+model ReservationItem {
+  id            String      @id @default(uuid())
+  reservationId String
+  batchId       String      
+  medicineId    String
+  quantity      Int
+  
+  Reservation   Reservation @relation(fields: [reservationId], references: [id])
+  
+  // 🔗 The missing relation field pointing back to Medicine
+  Medicine      Medicine    @relation(fields: [medicineId], references: [id])
+  morningDose     Boolean   @default(false)
+  morningTiming   String?
+  afternoonDose   Boolean   @default(false)
+  afternoonTiming String?
+  eveningDose     Boolean   @default(false)
+  eveningTiming   String?
+  dosageNote      String?
+}
+
+model StockTransaction {
+  id            String               @id
+  batchId       String
+  type          StockTransactionType
+  quantity      Int
+  remarks       String?
+  createdAt     DateTime             @default(now())
+  MedicineBatch MedicineBatch        @relation(fields: [batchId], references: [id])
+
+  @@index([batchId])
+}
+
+model User {
+  id           String         @id @default(uuid())
+  name         String
+  email        String         @unique
+  passwordHash String
+  role         UserRole       @default(CUSTOMER)
+  
+  // New fields for the auth pipeline
+  phone        String?        @unique
+  isVerified   Boolean        @default(false)
+  isActive     Boolean        @default(true)
+  resetOtp     String?
+  resetOtpExpiry DateTime?
+  
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  // Your existing database relations (Do not change these)
+  Prescription Prescription[]
+  Reservation  Reservation[]
+  Pharmacy Pharmacy?
+  
+  ReportedComplaints Complaint[] @relation("ReportedComplaints")
+  FiledComplaints    Complaint[] @relation("FiledComplaints")
+}
+
+enum PharmacyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PrescriptionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Define the states a reservation can be in
+enum ReservationStatus {
+  AWAITING_REVIEW
+  PENDING
+  APPROVED
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+  DRAFT_SENT
+}
+
+enum OrderType {
+  ITEM_BASED
+  PRESCRIPTION_ONLY
+}
+
+enum StockTransactionType {
+  PURCHASE
+  SALE
+  RESERVATION
+  RESERVATION_RELEASE
+  ADJUSTMENT
+  EXPIRED
+}
+
+enum UserRole {
+  CUSTOMER
+  PHARMACIST
+  OWNER
+  PHARMACY_OWNER   // <-- Added back to support your legacy data
+  ADMIN
+  SUPER_ADMIN
+}
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}

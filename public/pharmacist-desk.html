@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediFind - Pharmacist Desk</title>
+  <script src="auth-guard.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-view="pharmacist">
+<header class="nav" id="nav">
+  <div class="nav-inner" style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+    <a href="#" class="brand" style="display: flex; flex-direction: column; text-decoration: none;">
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <img class="brand-image" src="SAVE_20260612_121856.jpg.jpeg" alt="JSL Works logo" style="height: 75px; border-radius: 6px; object-fit: contain; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div style="height: 45px; width: 2px; background: var(--line); border-radius: 2px;"></div>
+        <img src="medifind_logo.png" alt="MediFind Logo" style="height: 75px; object-fit: contain;">
+      </div>
+      <span class="brand-tagline" style="font-size: 0.75rem; color: var(--slate); margin-top: 6px; font-weight: 600; letter-spacing: 0.5px;">विद्या परं बलमेतत् सर्वं ध्रुवं नित्यम्</span>
+    </a>
+    
+    <div style="display: flex; align-items: center; gap: 15px;">
+      <h1 style="margin: 0; font-size: 1.2rem; font-weight: 500; color: var(--ink);">Pharmacist Desk</h1>
+      <button class="nav-cta logout-btn" onclick="logout()" style="margin: 0;">Logout</button>
+    </div>
+  </div>
+</header>
+<main id="view-pharmacist" class="view active">
+  <section class="dash-shell">
+    <aside class="dash-sidebar">
+      <div class="dash-pharmacy-name"><span class="pulse-dot pulse-dot--sm live"></span>Pharmacist Desk</div>
+      <nav class="dash-nav">
+        <button class="dash-nav-item active" data-panel="rxqueue">Prescription queue</button>
+        <button class="dash-nav-item" data-panel="collectqueue">Collection queue</button>
+        <button class="dash-nav-item" data-panel="medinfo">Medicine info</button>
+        <button class="dash-nav-item" data-panel="normalmeds">Normal Medicines</button>
+        <button class="dash-nav-item" data-panel="restricted">Restricted Medicines</button>
+      </nav>
+    </aside>
+    <div class="dash-content">
+      <div class="dash-panel active" id="panel-rxqueue"><div class="dash-head"><h2>Prescription verification</h2><p class="muted">Review uploads, approve or reject before reservation releases.</p></div><div class="rx-queue" id="rxQueue"></div></div>
+      <div class="dash-panel" id="panel-collectqueue"><div class="dash-head"><h2>Collection queue</h2><p class="muted">Confirm pickups against reservation IDs.</p></div><div class="panel-card"><table class="data-table data-table--full" id="collectionTable"></table></div></div>
+      <div class="dash-panel" id="panel-medinfo"><div class="dash-head"><h2>Medicine information</h2><p class="muted">Quick reference for customer questions.</p></div><div class="med-info-grid" id="medInfoGrid"></div></div>
+
+      
+      <div class="dash-panel" id="panel-normalmeds" style="display: none;">
+        <div class="dash-head">
+          <h2>Normal Medicines</h2>
+          <p class="muted">Manage and monitor standard inventory.</p>
+        </div>
+        <div class="panel-card">
+          <table class="data-table data-table--full" style="width: 100%; text-align: left;">
+            <thead>
+              <tr>
+                <th>Brand Name</th>
+                <th>Generic Name</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="normalMedicinesTable">
+              <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="dash-panel" id="panel-restricted">
+        <div class="dash-head">
+          <h2>Restricted Medicines</h2>
+          <p class="muted">Manage and monitor restricted drugs that require strict prescriptions.</p>
+        </div>
+        <div class="panel-card">
+          <table class="data-table data-table--full" style="width: 100%; text-align: left;">
+            <thead>
+              <tr>
+                <th>Brand Name</th>
+                <th>Generic Name</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="restrictedMedicinesTable">
+              <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+<footer class="site-footer"><div class="footer-inner"><div class="brand footer-brand"><span class="brand-mark"><span class="pulse-dot"></span></span>MediFind</div><p class="muted">A unified platform for medicine discovery, inventory visibility, and reservation management.</p></div></footer>
+<div class="toast" id="toast"></div>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

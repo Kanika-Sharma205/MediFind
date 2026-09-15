@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediFind - Smart Search</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0f172a; --slate: #64748b; --paper: #f8fafc; --white: #ffffff;
+      --primary: #047857; --primary-light: #d1fae5;
+      --accent: #2563eb; --accent-light: #dbeafe;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--paper); color: var(--ink); margin: 0; padding: 0; }
+    
+    /* Top Navigation */
+    .navbar { background: var(--white); padding: 16px 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+    .navbar h1 { font-family: 'Fraunces', serif; color: var(--primary); margin: 0; font-size: 1.5rem; }
+    .nav-links a { color: var(--slate); text-decoration: none; margin-left: 20px; font-weight: 500; }
+    
+    /* Search Hero Section */
+    .hero { background: var(--ink); color: var(--white); padding: 60px 20px; text-align: center; }
+    .hero h2 { font-size: 2.5rem; margin-top: 0; font-family: 'Fraunces', serif; }
+    .search-bar { max-width: 600px; margin: 0 auto; display: flex; background: var(--white); padding: 8px; border-radius: 50px; }
+    .search-bar input { flex: 1; border: none; padding: 12px 20px; font-size: 1.1rem; border-radius: 50px; outline: none; }
+    .search-bar button { background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 600; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+    .search-bar button:hover { background: #065f46; }
+
+    /* AI Generic Suggestion Banner */
+    .ai-banner { background: var(--accent-light); color: var(--accent); max-width: 800px; margin: 24px auto 0; padding: 16px; border-radius: 8px; display: none; align-items: center; gap: 10px; font-weight: 500; border: 1px solid #bfdbfe; }
+    
+    /* Results Grid */
+    .results-container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    .loading { text-align: center; color: var(--slate); font-size: 1.2rem; display: none; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+    
+    /* Medicine Card */
+    .med-card { background: var(--white); border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .med-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; }
+    .med-title h3 { margin: 0 0 4px 0; font-size: 1.4rem; color: var(--ink); }
+    .med-title p { margin: 0; color: var(--slate); font-size: 0.9rem; }
+    .med-price { text-align: right; }
+    .med-price p { margin: 0; font-size: 0.85rem; color: var(--slate); }
+    .med-price h2 { margin: 0; color: var(--primary); font-size: 1.8rem; }
+    
+    /* Pharmacy List */
+    .pharmacy-list h4 { margin: 0 0 12px 0; color: var(--slate); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .pharmacy-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--paper); border-radius: 8px; margin-bottom: 8px; }
+    .pharmacy-info strong { display: block; color: var(--ink); }
+    .pharmacy-info span { font-size: 0.85rem; color: var(--slate); }
+    .stock-badge { background: var(--primary-light); color: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .reserve-btn { background: var(--ink); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; }
+    .reserve-btn:hover { background: #334155; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <h1>MediFind.</h1>
+    <div class="nav-links">
+      <a href="login.html">Login</a>
+      <a href="admin-console.html">Admin</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h2>Find Medicine. Compare Prices.</h2>
+    <p style="color: #94a3b8; margin-bottom: 30px;">Search by brand, generic name, or active salt composition.</p>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Try searching 'Crocin', 'Paracetamol', or 'Dolo'..." onkeypress="handleEnter(event)">
+      <button onclick="executeSearch()">Search</button>
+    </div>
+  </section>
+
+  <div class="results-container">
+    <div id="aiBanner" class="ai-banner">
+      <span>✨ <b>AI Insights:</b> We found multiple bioequivalent options. Compare prices below to save money!</span>
+    </div>
+    
+    <div id="loadingIndicator" class="loading">Searching live inventory across pharmacies...</div>
+    
+    <div id="resultsGrid" class="grid">
+      </div>
+  </div>
+
+  <script>
+    function handleEnter(event) {
+      if (event.key === 'Enter') executeSearch();
+    }
+
+   async function executeSearch() {
+      const query = document.getElementById('searchInput').value.trim();
+      const grid = document.getElementById('resultsGrid');
+      const loading = document.getElementById('loadingIndicator');
+      const aiBanner = document.getElementById('aiBanner');
+
+      // Reset UI
+      grid.innerHTML = '';
+      aiBanner.style.display = 'none';
+      
+      // We removed the line blocking empty searches so you can see all inventory!
+      loading.style.display = 'block';
+
+      try {
+        const response = await fetch(`/api/medicines/search?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        
+        loading.style.display = 'none';
+
+        if (!data.success || data.data.length === 0) {
+          grid.innerHTML = '<div style="text-align:center; padding: 40px; color:#64748b;">No medicines found matching your search.</div>';
+          return;
+        }
+
+        if (data.data.length > 1 && query !== "") {
+          aiBanner.style.display = 'flex';
+        }
+
+        data.data.forEach(med => {
+          let pharmacyHtml = '';
+          if (med.pharmacies && med.pharmacies.length > 0) {
+            med.pharmacies.sort((a, b) => a.sellingPrice - b.sellingPrice);
+            
+            med.pharmacies.forEach(p => {
+              pharmacyHtml += `
+                <div class="pharmacy-item">
+                  <div class="pharmacy-info">
+                    <strong>${p.pharmacyName}</strong>
+                    <span>${p.city || 'Local Store'}</span>
+                  </div>
+                  <div style="text-align: right; display:flex; align-items:center; gap: 16px;">
+                    <span class="stock-badge">${p.availableQuantity} in stock</span>
+                    <strong style="font-size: 1.1rem;">₹${p.sellingPrice}</strong>
+                    <button class="reserve-btn" onclick="alert('Reservation flow initiated for ${p.pharmacyName}!')">Reserve</button>
+                  </div>
+                </div>
+              `;
+            });
+          } else {
+            pharmacyHtml = '<div style="color: #ef4444; font-weight:500; padding: 12px 0;">Currently out of stock at all connected pharmacies.</div>';
+          }
+
+          const lowestPrice = med.lowestPrice ? `₹${med.lowestPrice}` : '--';
+          const card = document.createElement('div');
+          card.className = 'med-card';
+          card.innerHTML = `
+            <div class="med-header">
+              <div class="med-title">
+                <h3>${med.brandName}</h3>
+                <p>Generic: <strong>${med.genericName}</strong></p>
+                <p style="margin-top:4px;">Salt: ${med.saltComposition || 'Not specified'}</p>
+              </div>
+              <div class="med-price">
+                <p>Starting at</p>
+                <h2>${lowestPrice}</h2>
+              </div>
+            </div>
+            <div class="pharmacy-list">
+              <h4>Available At</h4>
+              ${pharmacyHtml}
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+
+      } catch (error) {
+        console.error("Search failed:", error);
+        loading.style.display = 'none';
+        grid.innerHTML = '<div style="text-align:center; color:red;">Cannot connect to the server. Is your backend running?</div>';
+      }
+    }
+  </script>
+</body>
+</html>

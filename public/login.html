@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediFind - Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background-color: var(--paper-soft); display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+    .auth-card { background: var(--paper); padding: 40px; border-radius: var(--radius-md); box-shadow: var(--shadow-card); width: 100%; max-width: 400px; }
+    .auth-brand { text-align: center; margin-bottom: 8px; font-family: var(--font-display); font-size: 1.5rem; color: var(--ink); }
+    .auth-subtitle { text-align: center; margin-bottom: 32px; color: var(--slate); font-size: 0.9rem; }
+    .auth-form { display: flex; flex-direction: column; gap: 16px; }
+    .auth-input { padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 1rem; width: 100%; box-sizing: border-box; }
+    .auth-input:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px var(--ink-tint); }
+    .auth-btn { background: var(--ink); color: white; border: none; padding: 14px; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+    .auth-btn:hover { background: var(--ink-deep); }
+    .auth-error { color: var(--danger); font-size: 0.875rem; display: none; background: var(--danger-tint); padding: 10px; border-radius: var(--radius-sm); margin-bottom: 16px; }
+    .auth-links { margin-top: 24px; text-align: center; font-size: 0.9rem; }
+    .auth-links a { color: var(--slate); text-decoration: none; }
+    .auth-links a:hover { color: var(--ink); text-decoration: underline; }
+
+    /* Modal Styles */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+    .modal-content { background: var(--paper); padding: 30px; border-radius: var(--radius-md); width: 100%; max-width: 400px; box-shadow: var(--shadow-modal); position: relative; }
+    .modal-close { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--slate); }
+    .modal-title { font-family: var(--font-display); font-size: 1.25rem; margin-bottom: 15px; color: var(--ink); }
+    .password-container { position: relative; width: 100%; }
+    .password-container input { width: 100%; }
+    .password-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--slate); font-size: 0.9rem; user-select: none; }
+  </style>
+</head>
+<body>
+
+  <div class="auth-card">
+    <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 10px;">
+      <img src="SAVE_20260612_121856.jpg.jpeg" alt="JSL Works logo" style="height: 75px; border-radius: 6px; object-fit: contain; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+      <div style="height: 45px; width: 2px; background: var(--line); border-radius: 2px;"></div>
+      <img src="medifind_logo.png" alt="MediFind Logo" style="height: 75px; object-fit: contain;">
+    </div>
+    <div style="text-align: center; font-size: 0.75rem; color: var(--slate); margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px;">विद्या परं बलमेतत् सर्वं ध्रुवं नित्यम्</div>
+    <div class="auth-brand">Welcome Back</div>
+    <div class="auth-subtitle">Sign in to MediFind</div>
+    
+    <div class="auth-error" id="errorMsg"></div>
+
+      <form id="loginForm" class="auth-form">
+        <input type="text" id="email" class="auth-input" placeholder="Email or Mobile Number" required>
+        <div class="password-container">
+          <input type="password" id="password" class="auth-input" placeholder="Password" style="padding-right: 40px;" required>
+          <span class="password-toggle" onclick="togglePassword('password')">Show</span>
+        </div>
+        <div style="text-align: right;">
+        <a href="#" id="forgotPasswordLink" style="font-size: 0.85rem; color: var(--slate); text-decoration: none;">Forgot Password?</a>
+      </div>
+      <button type="submit" id="submitBtn" class="auth-btn">Sign In</button>
+    </form>
+
+    <div class="auth-links">
+      <a href="signup.html">Don't have an account? Create one</a>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modals -->
+  <div class="modal-overlay" id="forgotModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeForgotModal()">&times;</button>
+      <div class="modal-title" id="forgotTitle">Reset Password</div>
+      <div class="auth-error" id="forgotError"></div>
+      <div style="color: var(--success); font-size: 0.875rem; display: none; background: var(--success-tint); padding: 10px; border-radius: var(--radius-sm); margin-bottom: 16px;" id="forgotSuccess"></div>
+      
+      <!-- Step 1: Request OTP -->
+      <form id="requestOtpForm" class="auth-form">
+        <p style="font-size: 0.9rem; color: var(--slate); margin-top: 0;">Enter your registered Email or Mobile Number to receive an OTP.</p>
+        <input type="text" id="forgotEmail" class="auth-input" placeholder="Email or Mobile Number" required>
+        <button type="submit" id="requestOtpBtn" class="auth-btn">Send OTP</button>
+      </form>
+
+      <!-- Step 2: Verify OTP & Reset -->
+      <form id="resetPasswordForm" class="auth-form" style="display: none;">
+        <p style="font-size: 0.9rem; color: var(--slate); margin-top: 0;">Enter the 6-digit OTP sent to your email.</p>
+        <input type="text" id="resetOtp" class="auth-input" placeholder="6-digit OTP" required>
+        <div class="password-container">
+          <input type="password" id="newPassword" class="auth-input" placeholder="New Password" style="padding-right: 40px;" required>
+          <span class="password-toggle" onclick="togglePassword('newPassword', this)">👁️</span>
+        </div>
+        <button type="submit" id="resetPasswordBtn" class="auth-btn">Reset Password</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function togglePassword(inputId, icon) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        icon.textContent = '👁️';
+      }
+    }
+
+    function togglePassword(id) {
+      const input = document.getElementById(id);
+      const toggleBtn = input.nextElementSibling;
+      if (input.type === "password") {
+        input.type = "text";
+        toggleBtn.textContent = "Hide";
+      } else {
+        input.type = "password";
+        toggleBtn.textContent = "Show";
+      }
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const btn = document.getElementById('submitBtn');
+      const errorMsg = document.getElementById('errorMsg');
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      btn.textContent = 'Signing in...';
+      btn.disabled = true;
+      errorMsg.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Login failed');
+        }
+
+        // Save user details (token is handled automatically via HttpOnly cookie)
+        localStorage.setItem('medifind-user', JSON.stringify(data.user));
+
+        // ROLE-BASED ROUTING
+        if (data.user.role === 'ADMIN' || data.user.role === 'SUPER_ADMIN') {
+          window.location.href = 'admin-console.html';
+        } else if (data.user.role === 'OWNER') {
+          // Check if pharmacy is approved
+          if (data.user.Pharmacy && data.user.Pharmacy.status === 'PENDING') {
+             window.location.href = 'pending.html'; // Redirect to the "Under Review" page
+          } else {
+             window.location.href = 'pharmacy-dashboard.html';
+          }
+        } else {
+          // Standard Customer
+          window.location.href = 'index.html';
+        }
+
+      } catch (err) {
+        errorMsg.textContent = err.message;
+        errorMsg.style.display = 'block';
+        btn.textContent = 'Sign In';
+        btn.disabled = false;
+      }
+    });
+
+    // Forgot Password Logic
+    const forgotModal = document.getElementById('forgotModal');
+    const requestForm = document.getElementById('requestOtpForm');
+    const resetForm = document.getElementById('resetPasswordForm');
+    const forgotError = document.getElementById('forgotError');
+    const forgotSuccess = document.getElementById('forgotSuccess');
+    
+    document.getElementById('forgotPasswordLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      forgotModal.style.display = 'flex';
+      requestForm.style.display = 'flex';
+      resetForm.style.display = 'none';
+      forgotError.style.display = 'none';
+      forgotSuccess.style.display = 'none';
+      document.getElementById('forgotEmail').value = document.getElementById('email').value;
+    });
+
+    function closeForgotModal() {
+      forgotModal.style.display = 'none';
+    }
+
+    requestForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const emailInput = document.getElementById('forgotEmail').value;
+      const btn = document.getElementById('requestOtpBtn');
+      
+      btn.textContent = 'Sending...';
+      btn.disabled = true;
+      forgotError.style.display = 'none';
+      forgotSuccess.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: emailInput })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+        
+        forgotSuccess.textContent = data.message;
+        forgotSuccess.style.display = 'block';
+        requestForm.style.display = 'none';
+        resetForm.style.display = 'flex';
+        // Pass the resolved email down
+        resetForm.dataset.email = data.email || emailInput;
+      } catch (err) {
+        forgotError.textContent = err.message;
+        forgotError.style.display = 'block';
+      } finally {
+        btn.textContent = 'Send OTP';
+        btn.disabled = false;
+      }
+    });
+
+    resetForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const otp = document.getElementById('resetOtp').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const email = resetForm.dataset.email;
+      const btn = document.getElementById('resetPasswordBtn');
+      
+      btn.textContent = 'Resetting...';
+      btn.disabled = true;
+      forgotError.style.display = 'none';
+      forgotSuccess.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp, newPassword })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+        
+        forgotSuccess.textContent = data.message;
+        forgotSuccess.style.display = 'block';
+        resetForm.style.display = 'none';
+        
+        // Auto close after 2 seconds
+        setTimeout(() => {
+          closeForgotModal();
+          document.getElementById('password').value = '';
+        }, 2000);
+      } catch (err) {
+        forgotError.textContent = err.message;
+        forgotError.style.display = 'block';
+        btn.textContent = 'Reset Password';
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
