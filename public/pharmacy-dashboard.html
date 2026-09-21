@@ -703,6 +703,7 @@
           document.getElementById('tokenVerifyInput').value = '';
           loadReservations(); 
           loadInventory();    
+          loadAnalytics();
         } else {
            const err = await res.json();
            alert("❌ Verification Failed: " + (err.message || "Server Error"));
@@ -931,6 +932,7 @@
           alert(data.message);
           fileInput.value = '';
           loadInventory();
+          loadMedicines();
         } else alert("Upload failed: " + (data.message || "Server error"));
       } catch (err) {
         alert("Network error during upload.");
@@ -982,8 +984,8 @@
     const today = new Date();
     const lastMonth = new Date();
     lastMonth.setMonth(today.getMonth() - 1);
-    document.getElementById('analyticsEndDate').value = today.toISOString().split('T')[0];
-    document.getElementById('analyticsStartDate').value = lastMonth.toISOString().split('T')[0];
+    document.getElementById('analyticsEndDate').value = today.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    document.getElementById('analyticsStartDate').value = lastMonth.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
     async function loadAnalytics() {
       const startDate = document.getElementById('analyticsStartDate').value;

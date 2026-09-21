@@ -448,6 +448,8 @@ router.post(
         const rawSalt = cleanRow["salt composition"] || cleanRow["salt"];
         const rawRestricted = cleanRow["restricted"] || cleanRow["is restricted"] || cleanRow["restricted status"];
         const isRestricted = ["true", "yes", "1", "y"].includes(String(rawRestricted || "").trim().toLowerCase());
+        const rawGenericName = cleanRow["generic name"] || cleanRow["generic"];
+        const rawDosageForm = cleanRow["dosage form"] || cleanRow["dosage"] || cleanRow["form"];
 
         // 👻 IGNORE GHOST ROWS
         if (!medName && !batchNumber && !rawQuantity) continue; 
@@ -469,16 +471,35 @@ router.post(
               id: crypto.randomUUID(),
               skuCode: "SKU-" + Math.floor(100000 + Math.random() * 900000),
               brandName: String(medName).trim(),
-              genericName: "Pending Update",
+              genericName: rawGenericName ? String(rawGenericName).trim() : "Pending Update",
               manufacturerId: fallbackManufacturer.id, 
               updatedAt: new Date(),                   
               saltComposition: String(rawSalt).trim(),
-              dosageForm: "Pending Update",
+              dosageForm: rawDosageForm ? String(rawDosageForm).trim() : "Pending Update",
               prescriptionRequired: isRestricted, // restricted medicines always require a prescription too
               isRestricted: isRestricted
             }
           });
           masterMedicines.push(matchedMedicine);
+        } else {
+          // ✏️ BACKFILL: if this medicine already exists but still has the
+          // "Pending Update" placeholder, and this row now supplies a real
+          // value, fill it in. Never overwrites a value someone already set.
+          const backfillData = {};
+          if (rawGenericName && matchedMedicine.genericName === "Pending Update") {
+            backfillData.genericName = String(rawGenericName).trim();
+          }
+          if (rawDosageForm && matchedMedicine.dosageForm === "Pending Update") {
+            backfillData.dosageForm = String(rawDosageForm).trim();
+          }
+          if (Object.keys(backfillData).length > 0) {
+            matchedMedicine = await prisma.medicine.update({
+              where: { id: matchedMedicine.id },
+              data: backfillData,
+            });
+            const idx = masterMedicines.findIndex(m => m.id === matchedMedicine.id);
+            if (idx !== -1) masterMedicines[idx] = matchedMedicine;
+          }
         }
 
         let formattedExpiry;
