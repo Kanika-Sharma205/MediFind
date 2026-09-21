@@ -180,18 +180,21 @@ router.patch("/:id/restrict", authenticate, authorize("ADMIN", "SUPER_ADMIN"), a
 }));
 
 router.get("/search", asyncHandler(async (req, res) => {
-  const { query } = req.query;
+  const query = String(req.query.q || "").trim();
 
   // 1. Perform the search
   const medicines = await prisma.medicine.findMany({
-    where: {
-      OR: [
-        { brandName: { contains: query, mode: 'insensitive' } },
-        { genericName: { contains: query, mode: 'insensitive' } },
-        { saltComposition: { contains: query, mode: 'insensitive' } }
-      ]
-    },
+    where: query
+      ? {
+          OR: [
+            { brandName: { contains: query, mode: 'insensitive' } },
+            { genericName: { contains: query, mode: 'insensitive' } },
+            { saltComposition: { contains: query, mode: 'insensitive' } }
+          ]
+        }
+      : undefined,
     include: {
+      Manufacturer: true,
       MedicineBatch: {
         where: {
           Pharmacy: {
@@ -199,32 +202,27 @@ router.get("/search", asyncHandler(async (req, res) => {
             status: "APPROVED"
           }
         },
-        include: { StockTransaction: true }
-      }
-    }
+        include: {
+          Pharmacy: true,
+          StockTransaction: true,
+        },
+      },
+    },
+    orderBy: [{ brandName: "asc" }, { genericName: "asc" }],
+    take: 50,
   });
 
-  // 2. Add "Availability & Price" logic
-  const results = medicines.map(med => {
-    const totalStock = med.MedicineBatch.reduce((sum, batch) => {
-      const batchStock = batch.StockTransaction.reduce((s, tx) => 
-        s + (tx.type === 'PURCHASE' ? tx.quantity : -tx.quantity), 0);
-      return sum + Math.max(0, batchStock);
-    }, 0);
-
-    const minPrice = med.MedicineBatch.length > 0 
-      ? Math.min(...med.MedicineBatch.map(b => Number(b.sellingPrice))) 
-      : 0;
-
-    return {
-      ...med,
-      availableQuantity: totalStock,
-      minPrice: minPrice
-    };
-  });
+  // 2. Reuse the same shape the main search endpoint uses (pharmacies[],
+  // lowestPrice, totalAvailable) so every frontend that calls a "medicines
+  // search" endpoint gets a consistent response.
+  const results = medicines.map((med) => serializeMedicine(med));
 
   // 3. Sort by: 1. Availability (In-stock first), 2. Price (Low to high)
-  results.sort((a, b) => (b.availableQuantity > 0 ? 1 : 0) - (a.availableQuantity > 0 ? 1 : 0) || a.minPrice - b.minPrice);
+  results.sort(
+    (a, b) =>
+      (b.totalAvailable > 0 ? 1 : 0) - (a.totalAvailable > 0 ? 1 : 0) ||
+      (a.lowestPrice ?? Infinity) - (b.lowestPrice ?? Infinity)
+  );
 
   // 4. Send the response ONLY ONCE
   res.json({ success: true, data: results });

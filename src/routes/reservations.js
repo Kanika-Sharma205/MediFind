@@ -271,7 +271,11 @@ router.patch(
     if (!reservation) {
       throw new HttpError(404, "Reservation not found");
     }
-    
+
+    if (reservation.pharmacyId !== req.params.pharmacyId) {
+      throw new HttpError(403, "This reservation does not belong to your pharmacy.");
+    }
+
     // Validate: Can only modify if PENDING (to accept/reject) or ACCEPTED (to verify token)
     if (reservation.status !== "PENDING" && reservation.status !== "ACCEPTED") {
       throw new HttpError(400, "Only pending or accepted requests can be modified.");

@@ -7,7 +7,7 @@ exports.approvePharmacy = async (req, res) => {
     try {
         const pharmacy = await prisma.pharmacy.update({
             where: { id: req.params.id },
-            data: { status: 'APPROVED', rejectionReason: null }
+            data: { status: 'APPROVED', isAvailable: true, rejectionReason: null }
         });
         
         await prisma.auditLog.create({
